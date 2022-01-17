@@ -8,7 +8,7 @@ inThisBuild(
     organizationName := "Branislav Lazic",
     startYear := Some(2022),
     licenses += ("MIT", url("https://opensource.org/licenses/MIT")),
-    scalaVersion := "2.13.5",
+    scalaVersion := "2.13.7",
     scalacOptions ++= Seq(
       "-unchecked",
       "-deprecation",
@@ -17,7 +17,6 @@ inThisBuild(
       "UTF-8",
       "-Ywarn-unused:imports",
     ),
-    testFrameworks += new TestFramework("munit.Framework"),
     scalafmtOnCompile := true,
     dynverSeparator := "_", // the default `+` is not compatible with docker tags
   )
@@ -34,8 +33,7 @@ lazy val parkour =
     .settings(commonSettings)
     .settings(
       libraryDependencies ++= Seq(
-        library.munit           % Test,
-        library.munitScalaCheck % Test,
+        library.scalatest % Test,
       ),
     )
 
@@ -59,8 +57,8 @@ lazy val commonSettings =
 lazy val library =
   new {
     object Version {
-      val munit = "0.7.26"
+      val scalatest = "3.2.10"
     }
-    val munit           = "org.scalameta" %% "munit"            % Version.munit
-    val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % Version.munit
+    val scalatest = "org.scalatest" %% "scalatest" % Version.scalatest
+
   }
