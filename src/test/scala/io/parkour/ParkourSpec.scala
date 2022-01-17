@@ -24,12 +24,10 @@ package io.parkour
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 
-class ParserSpec extends AnyWordSpec with Matchers {
+class ParkourSpec extends AnyWordSpec with Matchers {
   import Parkour._
 
-  case class NumberPair(first: Int, second: Int)
-
-  "Parser" should {
+  "Parkour" should {
     "parse an integer" in {
       val parsed       = integer.run(TextInput("25"))
       val parseSuccess = parsed.toOption.get
@@ -53,7 +51,7 @@ class ParserSpec extends AnyWordSpec with Matchers {
 
     "not parse an integer" in {
       val parsed = integer.run(TextInput("a25"))
-      parsed shouldBe Left(ParseError("not a digit 'a25'", TextInput("a25")))
+      parsed shouldBe Left(ParseError("Not an integer 'a25'"))
     }
 
     "parse combined integers delimited by a space" in {
@@ -80,11 +78,46 @@ class ParserSpec extends AnyWordSpec with Matchers {
       parseSuccess.rest.toIterator should have size 0
     }
 
-    "parse an integer between spaces" in {
-      val parsed       = Parkour.between(ws, ws, integer).run(TextInput("   255   "))
+    "parse a string" in {
+      val parsed       = string.run(TextInput("test1"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe 255
+      parseSuccess.result shouldBe "test1"
       parseSuccess.rest.toIterator should have size 0
+    }
+
+    "parse a string starting with a whitespace, followed by a tab" in {
+      val parsed       = (ws <* string).run(TextInput("   test1 "))
+      val parseSuccess = parsed.toOption.get
+      parseSuccess.result shouldBe "test1"
+      parseSuccess.rest.toIterator should have size 1
+    }
+
+    "parse all 'a' characters" in {
+      val parsed       = manySatisfy(_ == 'a').run(TextInput("aaabb"))
+      val parseSuccess = parsed.toOption.get
+      parseSuccess.result shouldBe "aaa"
+      parseSuccess.rest.toIterator should have size 2
+    }
+
+    "not parse all 'a' characters if the string begins with 'b'" in {
+      val parsed = manySatisfy(_ == 'a').run(TextInput("baaabb"))
+      parsed shouldBe Left(ParseError("Unexpected character at the beginning of 'baaabb'."))
+    }
+
+    "parse an optionally negative integer" in {
+      val parser = pipe2(opt(satisfy(_ == '-')), integer)
+        .map {
+          case (Some(_), i) => -1 * i
+          case (None, i)    => i
+        }
+
+      val parsedInt       = parser.run(TextInput("3"))
+      val parseSuccessInt = parsedInt.toOption.get
+      parseSuccessInt.result shouldBe 3
+
+      val parsedNegativeInt       = parser.run(TextInput("-3"))
+      val parseSuccessNegativeInt = parsedNegativeInt.toOption.get
+      parseSuccessNegativeInt.result shouldBe -3
     }
   }
 }

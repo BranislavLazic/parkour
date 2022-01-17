@@ -23,9 +23,8 @@ package io.parkour
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.io.BufferedReader
 
 class FileReader {
-  def readFile(file: String) = Files.newBufferedReader(Paths.get(file))
-
-  def parse(lines: LazyList[String]) = ???
+  def getReader(file: String): BufferedReader = Files.newBufferedReader(Paths.get(file))
 }
