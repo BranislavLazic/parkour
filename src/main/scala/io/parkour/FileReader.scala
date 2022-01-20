@@ -25,6 +25,5 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.io.BufferedReader
 
-class FileReader {
+class FileReader:
   def getReader(file: String): BufferedReader = Files.newBufferedReader(Paths.get(file))
-}

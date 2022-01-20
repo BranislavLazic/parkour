@@ -21,7 +21,7 @@
 
 package io.parkour
 
-object Parkour {
+object Parkour:
 
   def integer: Parser[Int] = Parser[Int] { input =>
     val (digitsSeq, rest) =
@@ -38,13 +38,11 @@ object Parkour {
 
   def satisfy(cond: Char => Boolean) = Parser[Char] { input =>
     val it = input.toIterator
-    if (it.hasNext) {
+    if (it.hasNext)
       val ch = it.next()
       if (cond(ch)) Right(ParseSuccess(ch, StreamInput(it)))
       else Left(ParseError(s"Unexpected character at the beginning of '$input'."))
-    } else {
-      Left(ParseError(s"No characters to parse."))
-    }
+    else Left(ParseError(s"No characters to parse."))
   }
 
   def manySatisfy(cond: Char => Boolean) = Parser[String] { input =>
@@ -61,10 +59,9 @@ object Parkour {
   def ws: Parser[Unit] = skipManySatisfy(Character.isWhitespace)
 
   def opt[T](p: Parser[T]): Parser[Option[T]] = Parser[Option[T]] { input =>
-    p.run(input) match {
+    p.run(input) match
       case Left(ParseError(message))         => Right(ParseSuccess(None, input))
       case Right(ParseSuccess(result, rest)) => Right(ParseSuccess(Some(result), rest))
-    }
   }
 
   def pipe2[P1, P2](p1: Parser[P1], p2: Parser[P2]): Parser[(P1, P2)] = Parser[(P1, P2)] { input =>
@@ -94,4 +91,3 @@ object Parkour {
         r2 <- p4.run(r1.rest)
       } yield ParseSuccess((r1.result._1, r1.result._2, r1.result._3, r2.result), r2.rest)
     }
-}

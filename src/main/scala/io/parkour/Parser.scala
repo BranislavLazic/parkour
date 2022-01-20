@@ -21,47 +21,42 @@
 
 package io.parkour
 
-sealed trait ParserInput {
+sealed trait ParserInput:
   def toIterator: Iterator[Char]
-}
 
-final case class TextInput(text: String) extends ParserInput {
+final case class TextInput(text: String) extends ParserInput:
   override def toIterator: Iterator[Char] = text.iterator
+  override def toString(): String         = text
 
-  override def toString(): String = text
-}
-
-final case class StreamInput(stream: Iterator[Char]) extends ParserInput {
+final case class StreamInput(stream: Iterator[Char]) extends ParserInput:
   override def toIterator: Iterator[Char] = stream
   override def toString(): String         = stream.mkString
-}
 
 final case class ParseError(message: String)
 final case class ParseSuccess[T](result: T, rest: ParserInput)
 
-final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSuccess[T]]) {
+final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSuccess[T]]):
 
   /**
-    * Combines two parsers where a succeeding value is the one from
-    * the left-hand-side parser.
+    * Combines two parsers where a succeeding value is the one from the left-hand-side parser.
     */
   def *>[R](rhs: Parser[R]): Parser[T] = Parser[T] { input =>
-    run(input).flatMap { case ParseSuccess(value, rest) =>
-      rhs.run(rest).map { case ParseSuccess(_, r) => ParseSuccess(value, r) }
+    run(input).flatMap {
+      case ParseSuccess(value, rest) =>
+        rhs.run(rest).map { case ParseSuccess(_, r) => ParseSuccess(value, r) }
     }
   }
 
   /**
-    * Combines two parsers where a succeeding value is the one from
-    * the right-hand-side parser.
+    * Combines two parsers where a succeeding value is the one from the right-hand-side parser.
     */
   def <*[R](rhs: Parser[R]): Parser[R] = Parser[R] { input =>
-    run(input).flatMap { case ParseSuccess(_, rest) =>
-      rhs.run(rest)
+    run(input).flatMap {
+      case ParseSuccess(_, rest) =>
+        rhs.run(rest)
     }
   }
 
   def map[R](f: T => R): Parser[R] = Parser[R] { input =>
     run(input).map { case ParseSuccess(value, rest) => ParseSuccess(f(value), rest) }
   }
-}

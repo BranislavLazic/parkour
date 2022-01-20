@@ -24,84 +24,84 @@ package io.parkour
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 
-class ParkourSpec extends AnyWordSpec with Matchers {
-  import Parkour._
+class ParkourSpec extends AnyWordSpec with Matchers:
+  import Parkour.*
 
   "Parkour" should {
     "parse an integer" in {
       val parsed       = integer.run(TextInput("25"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe 25
-      parseSuccess.rest.toIterator should have size 0
+      parseSuccess.result `shouldBe` 25
+      parseSuccess.rest.toIterator `should` have `size` 0
     }
 
     "skip whitespaces" in {
       val parsed       = (skipManySatisfy(Character.isWhitespace)).run(TextInput("    abc"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe ()
-      parseSuccess.rest.toIterator should have size 3
+      parseSuccess.result `shouldBe` ()
+      parseSuccess.rest.toIterator `should` have `size` 3
     }
 
     "parse a whitespace" in {
       val parsed       = ws.run(TextInput(" "))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe ()
-      parseSuccess.rest.toIterator should have size 0
+      parseSuccess.result `shouldBe` ()
+      parseSuccess.rest.toIterator `should` have `size` 0
     }
 
     "not parse an integer" in {
       val parsed = integer.run(TextInput("a25"))
-      parsed shouldBe Left(ParseError("Not an integer 'a25'"))
+      parsed `shouldBe` Left(ParseError("Not an integer 'a25'"))
     }
 
     "parse combined integers delimited by a space" in {
       val parsedFirst       = (integer <* ws <* integer).run(TextInput("2    5"))
       val parseFirstSuccess = parsedFirst.toOption.get
-      parseFirstSuccess.result shouldBe 5
-      parseFirstSuccess.rest.toIterator should have size 0
+      parseFirstSuccess.result `shouldBe` 5
+      parseFirstSuccess.rest.toIterator `should` have `size` 0
 
       val parsedSecond       = (integer *> ws *> integer).run(TextInput("2    5"))
       val parseSecondSuccess = parsedSecond.toOption.get
-      parseSecondSuccess.result shouldBe 2
-      parseSecondSuccess.rest.toIterator should have size 0
+      parseSecondSuccess.result `shouldBe` 2
+      parseSecondSuccess.rest.toIterator `should` have `size` 0
 
       val parsedWs        = (integer <* ws *> integer).run(TextInput("2    5"))
       val parsedWsSuccess = parsedWs.toOption.get
-      parsedWsSuccess.result shouldBe ()
-      parsedWsSuccess.rest.toIterator should have size 0
+      parsedWsSuccess.result `shouldBe` ()
+      parsedWsSuccess.rest.toIterator `should` have `size` 0
     }
 
     "parse integers delimited by a space" in {
       val parsed       = pipe3(integer, ws, integer).run(TextInput("2    5"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe (2, (), 5)
-      parseSuccess.rest.toIterator should have size 0
+      parseSuccess.result `shouldBe` (2, (), 5)
+      parseSuccess.rest.toIterator `should` have `size` 0
     }
 
     "parse a string" in {
       val parsed       = string.run(TextInput("test1"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe "test1"
-      parseSuccess.rest.toIterator should have size 0
+      parseSuccess.result `shouldBe` "test1"
+      parseSuccess.rest.toIterator `should` have `size` 0
     }
 
     "parse a string starting with a whitespace, followed by a tab" in {
       val parsed       = (ws <* string).run(TextInput("   test1 "))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe "test1"
-      parseSuccess.rest.toIterator should have size 1
+      parseSuccess.result `shouldBe` "test1"
+      parseSuccess.rest.toIterator `should` have `size` 1
     }
 
     "parse all 'a' characters" in {
       val parsed       = manySatisfy(_ == 'a').run(TextInput("aaabb"))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result shouldBe "aaa"
-      parseSuccess.rest.toIterator should have size 2
+      parseSuccess.result `shouldBe` "aaa"
+      parseSuccess.rest.toIterator `should` have `size` 2
     }
 
     "not parse all 'a' characters if the string begins with 'b'" in {
       val parsed = manySatisfy(_ == 'a').run(TextInput("baaabb"))
-      parsed shouldBe Left(ParseError("Unexpected character at the beginning of 'baaabb'."))
+      parsed `shouldBe` Left(ParseError("Unexpected character at the beginning of 'baaabb'."))
     }
 
     "parse an optionally negative integer" in {
@@ -113,11 +113,10 @@ class ParkourSpec extends AnyWordSpec with Matchers {
 
       val parsedInt       = parser.run(TextInput("3"))
       val parseSuccessInt = parsedInt.toOption.get
-      parseSuccessInt.result shouldBe 3
+      parseSuccessInt.result `shouldBe` 3
 
       val parsedNegativeInt       = parser.run(TextInput("-3"))
       val parseSuccessNegativeInt = parsedNegativeInt.toOption.get
-      parseSuccessNegativeInt.result shouldBe -3
+      parseSuccessNegativeInt.result `shouldBe` -3
     }
   }
-}

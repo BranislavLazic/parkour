@@ -4,21 +4,24 @@
 
 inThisBuild(
   Seq(
-    organization := "codeeng",
+    organization     := "codeeng",
     organizationName := "Branislav Lazic",
-    startYear := Some(2022),
+    startYear        := Some(2022),
     licenses += ("MIT", url("https://opensource.org/licenses/MIT")),
-    scalaVersion := "2.13.7",
+    scalaVersion := "3.1.0",
     scalacOptions ++= Seq(
-      "-unchecked",
       "-deprecation",
-      "-language:_",
-      "-encoding",
-      "UTF-8",
-      "-Ywarn-unused:imports",
+      "-unchecked",
+      "-rewrite",
+      "-indent",
+      "-pagewidth",
+      "100",
+      "-source",
+      "future",
+      "-Xfatal-warnings",
     ),
     scalafmtOnCompile := true,
-    dynverSeparator := "_", // the default `+` is not compatible with docker tags
+    dynverSeparator   := "_", // the default `+` is not compatible with docker tags
   )
 )
 
