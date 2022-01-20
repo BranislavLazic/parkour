@@ -57,6 +57,15 @@ final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSucce
     }
   }
 
+  /**
+    * Combines two parsers where a succeeding value is one from any parser that succeeded.
+    */
+  def <|>(rhs: Parser[T]): Parser[T] = Parser[T] { input =>
+    run(input) match
+      case Left(_)      => rhs.run(input)
+      case r @ Right(_) => r
+  }
+
   def map[R](f: T => R): Parser[R] = Parser[R] { input =>
     run(input).map { case ParseSuccess(value, rest) => ParseSuccess(f(value), rest) }
   }

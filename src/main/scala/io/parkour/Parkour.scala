@@ -26,37 +26,47 @@ object Parkour:
   def integer: Parser[Int] = Parser[Int] { input =>
     val (digitsSeq, rest) =
       input.toIterator.span(Character.isDigit)
-    if (digitsSeq.isEmpty) Left(ParseError(s"Not an integer '$input'"))
-    else Right(ParseSuccess(digitsSeq.mkString.toInt, StreamInput(rest)))
+    if (digitsSeq.isEmpty)
+      Left(ParseError(s"Not an integer '${input}'"))
+    else
+      Right(ParseSuccess(digitsSeq.mkString.toInt, StreamInput(rest)))
   }
 
-  def string: Parser[String] = Parser[String] { input =>
-    val (str, rest) =
-      input.toIterator.span(ch => !Character.isSpaceChar(ch))
-    Right(ParseSuccess(str.mkString, StreamInput(rest)))
+  def string(str: String): Parser[String] = Parser[String] { input =>
+    val strIt = str.iterator
+    val (strResult, rest) =
+      input.toIterator.span { ch =>
+        if (strIt.hasNext) ch == strIt.next else false
+      }
+    if (strResult.isEmpty)
+      Left(ParseError(s"Not a string at '${input}'"))
+    else
+      Right(ParseSuccess(strResult.mkString, StreamInput(rest)))
   }
 
   def satisfy(cond: Char => Boolean) = Parser[Char] { input =>
     val it = input.toIterator
     if (it.hasNext)
       val ch = it.next()
-      if (cond(ch)) Right(ParseSuccess(ch, StreamInput(it)))
-      else Left(ParseError(s"Unexpected character at the beginning of '$input'."))
+      if (cond(ch))
+        Right(ParseSuccess(ch, StreamInput(it)))
+      else
+        Left(ParseError(s"Unexpected character at the beginning of '$input'."))
     else Left(ParseError(s"No characters to parse."))
   }
 
   def manySatisfy(cond: Char => Boolean) = Parser[String] { input =>
     val (str, rest) = input.toIterator.span(cond)
-    if (str.isEmpty) Left(ParseError(s"Unexpected character at the beginning of '$input'."))
-    else Right(ParseSuccess(str.mkString, StreamInput(rest)))
+    if (str.isEmpty)
+      Left(ParseError(s"Unexpected character at the beginning of '$input'."))
+    else
+      Right(ParseSuccess(str.mkString, StreamInput(rest)))
   }
 
   def skipManySatisfy(cond: Char => Boolean) = Parser[Unit] { input =>
     val rest = input.toIterator.span(cond)._2
     Right(ParseSuccess((), StreamInput(rest)))
   }
-
-  def ws: Parser[Unit] = skipManySatisfy(Character.isWhitespace)
 
   def opt[T](p: Parser[T]): Parser[Option[T]] = Parser[Option[T]] { input =>
     p.run(input) match

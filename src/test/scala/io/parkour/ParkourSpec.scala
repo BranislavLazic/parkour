@@ -27,6 +27,8 @@ import org.scalatest.matchers.should.Matchers
 class ParkourSpec extends AnyWordSpec with Matchers:
   import Parkour.*
 
+  private def ws: Parser[Unit] = skipManySatisfy(Character.isWhitespace)
+
   "Parkour" should {
     "parse an integer" in {
       val parsed       = integer.run(TextInput("25"))
@@ -35,7 +37,7 @@ class ParkourSpec extends AnyWordSpec with Matchers:
       parseSuccess.rest.toIterator `should` have `size` 0
     }
 
-    "skip whitespaces" in {
+    "skip white spaces" in {
       val parsed       = (skipManySatisfy(Character.isWhitespace)).run(TextInput("    abc"))
       val parseSuccess = parsed.toOption.get
       parseSuccess.result `shouldBe` ()
@@ -79,17 +81,22 @@ class ParkourSpec extends AnyWordSpec with Matchers:
     }
 
     "parse a string" in {
-      val parsed       = string.run(TextInput("test1"))
+      val parsed       = string("test1").run(TextInput("test1"))
       val parseSuccess = parsed.toOption.get
       parseSuccess.result `shouldBe` "test1"
       parseSuccess.rest.toIterator `should` have `size` 0
     }
 
+    "not parse a string" in {
+      val parsed = string("test").run(TextInput(" test"))
+      parsed `shouldBe` Left(ParseError("Not a string at ' test'"))
+    }
+
     "parse a string starting with a whitespace, followed by a tab" in {
-      val parsed       = (ws <* string).run(TextInput("   test1 "))
+      val parsed       = (ws <* string("test")).run(TextInput("   test1 "))
       val parseSuccess = parsed.toOption.get
-      parseSuccess.result `shouldBe` "test1"
-      parseSuccess.rest.toIterator `should` have `size` 1
+      parseSuccess.result `shouldBe` "test"
+      parseSuccess.rest.toIterator `should` have `size` 2
     }
 
     "parse all 'a' characters" in {
@@ -118,5 +125,12 @@ class ParkourSpec extends AnyWordSpec with Matchers:
       val parsedNegativeInt       = parser.run(TextInput("-3"))
       val parseSuccessNegativeInt = parsedNegativeInt.toOption.get
       parseSuccessNegativeInt.result `shouldBe` -3
+    }
+
+    "parse one of two strings" in {
+      val parsed       = (string("true") <|> string("false")).run(TextInput("false"))
+      val parseSuccess = parsed.toOption.get
+      parseSuccess.result `shouldBe` "false"
+      parseSuccess.rest.toIterator `should` have `size` 0
     }
   }
