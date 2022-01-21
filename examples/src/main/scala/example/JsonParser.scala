@@ -35,21 +35,37 @@ case class JsObject(values: Map[String, JsValue]) extends JsValue
 
 object JsonParser:
   def ws = skipManySatisfy(Character.isWhitespace)
+  def betweenChars[T](open: Char, close: Char, p: Parser[T]): Parser[T] =
+    satisfy(_ == open) <* p *> satisfy(_ == close)
 
   val jsBoolean: Parser[JsValue] =
     (string("true") <|> string("false")).map(bool => JsBoolean(bool.toBoolean))
   val jsInt: Parser[JsValue] = integer.map(i => JsInt(i))
   val jsNull                 = string("null").map(_ => JsNull)
-  val jsString: Parser[JsValue] =
-    (satisfy(_ == '"') <* manySatisfy(Character.isLetterOrDigit) *> satisfy(_ == '"'))
-      .map(s => JsString(s.mkString))
+  val jsString: Parser[JsValue] = betweenChars(
+    '"',
+    '"',
+    manySatisfy(ch => Character.isLetterOrDigit(ch) || Character.isWhitespace(ch))
+  ).map(s => JsString(s.mkString))
 
-  val jsStringWs = ws <* jsString *> ws
-  val jsValueWs  = ws <* (jsInt <|> jsString <|> jsBoolean) *> ws
-  def jsField    = pipe2(jsStringWs *> satisfy(_ == ':'), jsValueWs)
+  val jsKey   = betweenChars('"', '"', manySatisfy(Character.isLetterOrDigit)).map(_.mkString)
+  val jsKeyWs = ws <* jsKey *> ws
+
+  val jsArray: Parser[JsValue] =
+    betweenChars('[', ']', sepBy(jsValueWs, satisfy(_ == ','))).map(list => JsArray(list))
+
+  def jsValueWs = ws <* (jsInt <|> jsString <|> jsBoolean <|> jsArray) *> ws
+  def jsField   = pipe2(jsKeyWs *> satisfy(_ == ':'), jsValueWs)
+  def jsObject  = ws <* betweenChars('{', '}', sepBy(jsField, satisfy(_ == ','))) *> ws
 
 def main(args: Array[String]) =
   import JsonParser.*
-  println(jsField.run(TextInput("""  
-  "hello" :  false  
-  """)))
+  println(
+    jsObject.run(
+      TextInput(
+        """
+        { "name": "John Doe", "drivingLicense": true, "age": 18, "tags": [1, true, 3] }
+        """
+      )
+    )
+  )

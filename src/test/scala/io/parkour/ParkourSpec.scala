@@ -87,10 +87,10 @@ class ParkourSpec extends AnyWordSpec with Matchers:
       parseSuccess.rest.toIterator `should` have `size` 0
     }
 
-    // "not parse a string" in {
-    //   val parsed = string("test").run(TextInput(" test"))
-    //   parsed `shouldBe` Left(ParseError("Not a string at ' test'"))
-    // }
+    "not parse a string" in {
+      val parsed = string("test").run(TextInput(" test"))
+      parsed `shouldBe` Left(ParseError("Not a string at ' test'"))
+    }
 
     "parse a string starting with a whitespace, followed by a tab" in {
       val parsed       = (ws <* string("test")).run(TextInput("   test1 "))
@@ -106,10 +106,10 @@ class ParkourSpec extends AnyWordSpec with Matchers:
       parseSuccess.rest.toIterator `should` have `size` 2
     }
 
-    // "not parse all 'a' characters if the string begins with 'b'" in {
-    //   val parsed = manySatisfy(_ == 'a').run(TextInput("baaabb"))
-    //   parsed `shouldBe` Left(ParseError("Unexpected character at the beginning of 'baaabb'."))
-    // }
+    "not parse all 'a' characters if the string begins with 'b'" in {
+      val parsed = manySatisfy(_ == 'a').run(TextInput("baaabb"))
+      parsed `shouldBe` Left(ParseError("Unexpected character at the beginning of 'baaabb'."))
+    }
 
     "parse an optionally negative integer" in {
       val parser = pipe2(opt(satisfy(_ == '-')), integer)
@@ -136,7 +136,17 @@ class ParkourSpec extends AnyWordSpec with Matchers:
 
     "parse comma separated integers" in {
       val parsed =
-        reps(integer *> opt(satisfy(_ == ','))).run(TextInput("1,1,1,1"))
-      println(parsed)
+        sepBy(integer, satisfy(_ == ',')).run(TextInput("1,1,1,122abc"))
+      val parseSuccess = parsed.toOption.get
+      parseSuccess.result `shouldBe` List(1, 1, 1, 122)
+      parseSuccess.rest.toIterator `should` have `size` 3
+    }
+
+    "parse many letters" in {
+      val parsed =
+        many(string("bla")).run(TextInput("blablabla123"))
+      val parseSuccess = parsed.toOption.get
+      parseSuccess.result `shouldBe` List("bla", "bla", "bla")
+      parseSuccess.rest.toIterator `should` have `size` 3
     }
   }

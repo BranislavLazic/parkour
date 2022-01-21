@@ -32,7 +32,7 @@ final case class StreamInput(stream: Iterator[Char]) extends ParserInput:
   override def toIterator: Iterator[Char] = stream
   override def toString(): String         = stream.mkString
 
-final case class ParseError(message: String, rest: ParserInput)
+final case class ParseError(message: String)
 final case class ParseSuccess[T](result: T, rest: ParserInput):
   override def toString(): String = s"""ParseSuccess($result, "$rest")"""
 
