@@ -40,6 +40,12 @@ lazy val parkour =
       ),
     )
 
+lazy val examples =
+  project
+    .in(file("./examples"))
+    .enablePlugins(AutomateHeaderPlugin)
+    .dependsOn(parkour)
+    .settings(commonSettings)
 // *****************************************************************************
 // Project settings
 // *****************************************************************************

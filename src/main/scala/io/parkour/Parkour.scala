@@ -27,7 +27,7 @@ object Parkour:
     val (digitsSeq, rest) =
       input.toIterator.span(Character.isDigit)
     if (digitsSeq.isEmpty)
-      Left(ParseError(s"Not an integer '${input}'"))
+      Left(ParseError(s"Not an integer '${input}'", StreamInput(rest)))
     else
       Right(ParseSuccess(digitsSeq.mkString.toInt, StreamInput(rest)))
   }
@@ -39,7 +39,7 @@ object Parkour:
         if (strIt.hasNext) ch == strIt.next else false
       }
     if (strResult.isEmpty)
-      Left(ParseError(s"Not a string at '${input}'"))
+      Left(ParseError(s"Not a string at '${input}'", StreamInput(rest)))
     else
       Right(ParseSuccess(strResult.mkString, StreamInput(rest)))
   }
@@ -51,16 +51,16 @@ object Parkour:
       if (cond(ch))
         Right(ParseSuccess(ch, StreamInput(it)))
       else
-        Left(ParseError(s"Unexpected character at the beginning of '$input'."))
-    else Left(ParseError(s"No characters to parse."))
+        Left(ParseError(s"Unexpected character at the beginning of '$input'.", StreamInput(it)))
+    else Left(ParseError(s"No characters to parse.", StreamInput(it)))
   }
 
-  def manySatisfy(cond: Char => Boolean) = Parser[String] { input =>
+  def manySatisfy(cond: Char => Boolean) = Parser[Seq[Char]] { input =>
     val (str, rest) = input.toIterator.span(cond)
     if (str.isEmpty)
-      Left(ParseError(s"Unexpected character at the beginning of '$input'."))
+      Left(ParseError(s"Unexpected character at the beginning of '$input'.", input))
     else
-      Right(ParseSuccess(str.mkString, StreamInput(rest)))
+      Right(ParseSuccess(str.toSeq, StreamInput(rest)))
   }
 
   def skipManySatisfy(cond: Char => Boolean) = Parser[Unit] { input =>
@@ -70,24 +70,54 @@ object Parkour:
 
   def opt[T](p: Parser[T]): Parser[Option[T]] = Parser[Option[T]] { input =>
     p.run(input) match
-      case Left(ParseError(message))         => Right(ParseSuccess(None, input))
+      case Left(ParseError(message, _))      => Right(ParseSuccess(None, input))
       case Right(ParseSuccess(result, rest)) => Right(ParseSuccess(Some(result), rest))
   }
 
-  def pipe2[P1, P2](p1: Parser[P1], p2: Parser[P2]): Parser[(P1, P2)] = Parser[(P1, P2)] { input =>
-    for {
-      r1 <- p1.run(input)
-      r2 <- p2.run(r1.rest)
-    } yield ParseSuccess((r1.result, r2.result), r2.rest)
+  def reps[T](p: Parser[T]): Parser[List[T]] = Parser[List[T]] { input =>
+    p.run(input) match
+      case Right(ParseSuccess(v, rest)) =>
+        reps(p).map(l => v :: l).run(rest)
+      case l @ Left(ParseError(msg, rest)) => Right(ParseSuccess(Nil, rest))
   }
 
+  // def sepBy[L, R](p: Parser[L], sep: Parser[R]): Parser[List[L]] =
+  //   Parser[List[L]] { input =>
+  //     pipe2(p, opt(sep)).run(input) match
+  //       case Right(ParseSuccess((v, Some(_)), rest)) =>
+  //         sepBy(p, sep).run(rest).map {
+  //           case ParseSuccess(list, rst) => ParseSuccess(v :: list, rst)
+  //         }
+  //       case Right(ParseSuccess((v, None), rest)) =>
+  //         Right(ParseSuccess(v :: Nil, rest))
+  //       case Left(_) => Left(ParseError("bla"))
+  //   }
+  // val first = for {
+  //   f <- opt(p)
+  //   s <- opt(sep)
+  // } yield (f, s)
+
+  // def remaining: Parser[List[L]] =
+  //   bindCons(p, opt(sep).flatMap(_.map(_ => remaining).getOrElse(Parser.pure(Nil))))
+
+  // first.flatMap {
+  //   case (optFirst, optSep) =>
+  //     optFirst
+  //       .map(f =>
+  //         println(f)
+  //         optSep.map(_ => bindCons(Parser.pure(f), remaining)).getOrElse(Parser.pure(List(f)))
+  //       )
+  //       .getOrElse(Parser.pure(Nil))
+  // }
+
+  def bindCons[T](p: Parser[T], tail: Parser[List[T]]): Parser[List[T]] =
+    p.flatMap(h => tail.map(t => h :: t))
+
+  def pipe2[P1, P2](p1: Parser[P1], p2: Parser[P2]): Parser[(P1, P2)] =
+    p1.flatMap(v1 => p2.map(v2 => (v1, v2)))
+
   def pipe3[P1, P2, P3](p1: Parser[P1], p2: Parser[P2], p3: Parser[P3]): Parser[(P1, P2, P3)] =
-    Parser[(P1, P2, P3)] { input =>
-      for {
-        r1 <- pipe2(p1, p2).run(input)
-        r2 <- p3.run(r1.rest)
-      } yield ParseSuccess((r1.result._1, r1.result._2, r2.result), r2.rest)
-    }
+    pipe2(p1, p2).flatMap(v1 => p3.map(v2 => (v1._1, v1._2, v2)))
 
   def pipe4[P1, P2, P3, P4](
       p1: Parser[P1],
@@ -95,9 +125,4 @@ object Parkour:
       p3: Parser[P3],
       p4: Parser[P4]
   ): Parser[(P1, P2, P3, P4)] =
-    Parser[(P1, P2, P3, P4)] { input =>
-      for {
-        r1 <- pipe3(p1, p2, p3).run(input)
-        r2 <- p4.run(r1.rest)
-      } yield ParseSuccess((r1.result._1, r1.result._2, r1.result._3, r2.result), r2.rest)
-    }
+    pipe3(p1, p2, p3).flatMap(v1 => p4.map(v2 => (v1._1, v1._2, v1._3, v2)))

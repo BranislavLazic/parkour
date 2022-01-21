@@ -32,8 +32,13 @@ final case class StreamInput(stream: Iterator[Char]) extends ParserInput:
   override def toIterator: Iterator[Char] = stream
   override def toString(): String         = stream.mkString
 
-final case class ParseError(message: String)
-final case class ParseSuccess[T](result: T, rest: ParserInput)
+final case class ParseError(message: String, rest: ParserInput)
+final case class ParseSuccess[T](result: T, rest: ParserInput):
+  override def toString(): String = s"""ParseSuccess($result, "$rest")"""
+
+object Parser:
+  def pure[T](t: T): Parser[T] =
+    Parser[T](input => Right(ParseSuccess(t, input)))
 
 final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSuccess[T]]):
 
@@ -61,11 +66,17 @@ final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSucce
     * Combines two parsers where a succeeding value is one from any parser that succeeded.
     */
   def <|>(rhs: Parser[T]): Parser[T] = Parser[T] { input =>
-    run(input) match
-      case Left(_)      => rhs.run(input)
+    val (original, copy) = input.toIterator.duplicate
+    run(StreamInput(original)) match
+      case Left(_) =>
+        rhs.run(StreamInput(copy))
       case r @ Right(_) => r
   }
 
   def map[R](f: T => R): Parser[R] = Parser[R] { input =>
     run(input).map { case ParseSuccess(value, rest) => ParseSuccess(f(value), rest) }
+  }
+
+  def flatMap[R](f: T => Parser[R]): Parser[R] = Parser[R] { input =>
+    run(input).flatMap { case ParseSuccess(value, rest) => f(value).run(rest) }
   }
