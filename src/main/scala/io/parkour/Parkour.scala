@@ -22,32 +22,6 @@
 package io.parkour
 
 object Parkour:
-
-  /**
-    * Parses a signed 32 bit integer.
-    */
-  def integer: Parser[Int] = opt(satisfy(_ == '-')) <* unsignedInt.map(_.toInt)
-
-  /**
-    * Parses a signed 64 bit integer.
-    */
-  def integer64: Parser[Long] = opt(satisfy(_ == '-')) <* unsignedInt
-
-  /**
-    * Parses a string.
-    */
-  def string(str: String): Parser[String] = Parser[String] { input =>
-    val strIt = str.iterator
-    val (strResult, rest) =
-      input.toIterator.span { ch =>
-        if (strIt.hasNext) ch == strIt.next else false
-      }
-    if (strResult.isEmpty)
-      Left(ParseError(s"Not a string at '$input'"))
-    else
-      Right(ParseSuccess(strResult.mkString, StreamInput(rest)))
-  }
-
   /**
     * Parses a single character that satisfies the given condition.
     */
@@ -86,6 +60,44 @@ object Parkour:
     p.flatMap(v => many(p).map(list => v :: list)) <|> Parser.pure(Nil)
 
   /**
+    * Parses an unsigned 64 bit integer.
+    */
+  def unsignedInt64 = Parser[Long] { input =>
+    many(satisfy(Character.isDigit)).run(input).flatMap {
+      case ParseSuccess(v, rest) if v.nonEmpty => Right(ParseSuccess(v.mkString.toLong, rest))
+      case ParseSuccess(v, rest)               => Left(ParseError(s"Not an integer '$rest'"))
+    }
+  }
+
+  /**
+    * Parses a signed 64 bit integer.
+    */
+  def int64: Parser[Long] = pipe2(opt(satisfy(_ == '-')), unsignedInt64).map {
+    case (Some(_), v) => -1 * v
+    case (None, v)    => v
+  }
+
+  /**
+    * Parses a signed 32 bit integer.
+    */
+  def int: Parser[Int] = int64.map(_.toInt)
+
+  /**
+    * Parses a string.
+    */
+  def string(str: String): Parser[String] = Parser[String] { input =>
+    val strIt = str.iterator
+    val (strResult, rest) =
+      input.toIterator.span { ch =>
+        if (strIt.hasNext) ch == strIt.next else false
+      }
+    if (strResult.isEmpty)
+      Left(ParseError(s"Not a string at '$input'"))
+    else
+      Right(ParseSuccess(strResult.mkString, StreamInput(rest)))
+  }
+
+  /**
     * Parses an optional occurrence of the given parser.
     */
   def opt[T](p: Parser[T]): Parser[Option[T]] = p.map(v => Some(v)) <|> Parser.pure(None)
@@ -94,10 +106,11 @@ object Parkour:
     * Parses multiple occurrences of parser "p" separated by "sep" parser.
     */
   def sepBy[L, R](p: Parser[L], sep: Parser[R]): Parser[List[L]] =
-    def remaining: Parser[List[L]] =
-      bindCons(p, opt(sep).flatMap(_.map(_ => remaining).getOrElse(Parser.pure(Nil))))
-    remaining
+    bindCons(p, opt(sep).flatMap(_.map(_ => sepBy(p, sep)).getOrElse(Parser.pure(Nil))))
 
+  /**
+    * Combine two parsers and return their values as a tuple.
+    */
   def pipe2[P1, P2](p1: Parser[P1], p2: Parser[P2]): Parser[(P1, P2)] =
     p1.flatMap(v1 => p2.map(v2 => (v1, v2)))
 
@@ -111,15 +124,6 @@ object Parkour:
       p4: Parser[P4]
   ): Parser[(P1, P2, P3, P4)] =
     pipe3(p1, p2, p3).flatMap(v1 => p4.map(v2 => (v1._1, v1._2, v1._3, v2)))
-
-  private def unsignedInt = Parser[Long] { input =>
-    val (original, duplicate) = input.toIterator.duplicate
-    val (digitsSeq, rest)     = original.span(Character.isDigit)
-    if (digitsSeq.isEmpty)
-      Left(ParseError(s"Not an integer '${duplicate.mkString}'"))
-    else
-      Right(ParseSuccess(digitsSeq.mkString.toLong, StreamInput(rest)))
-  }
 
   private def bindCons[T](p: Parser[T], tail: Parser[List[T]]): Parser[List[T]] =
     p.flatMap(h => tail.map(t => h :: t))

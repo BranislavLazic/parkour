@@ -31,7 +31,7 @@ class ParkourSpec extends AnyWordSpec with Matchers:
 
   "Parkour" should {
     "parse an integer" in {
-      val parsed       = integer.run(TextInput("25"))
+      val parsed       = int.run(TextInput("25"))
       val parseSuccess = parsed.toOption.get
       parseSuccess.result `shouldBe` 25
       parseSuccess.rest.toIterator `should` have `size` 0
@@ -52,29 +52,29 @@ class ParkourSpec extends AnyWordSpec with Matchers:
     }
 
     "not parse an integer" in {
-      val parsed = integer.run(TextInput("a25"))
+      val parsed = int.run(TextInput("a25"))
       parsed `shouldBe` Left(ParseError("Not an integer 'a25'"))
     }
 
     "parse combined integers delimited by a space" in {
-      val parsedFirst       = (integer <* ws <* integer).run(TextInput("2    5"))
+      val parsedFirst       = (int <* ws <* int).run(TextInput("2    5"))
       val parseFirstSuccess = parsedFirst.toOption.get
       parseFirstSuccess.result `shouldBe` 5
       parseFirstSuccess.rest.toIterator `should` have `size` 0
 
-      val parsedSecond       = (integer *> ws *> integer).run(TextInput("2    5"))
+      val parsedSecond       = (int *> ws *> int).run(TextInput("2    5"))
       val parseSecondSuccess = parsedSecond.toOption.get
       parseSecondSuccess.result `shouldBe` 2
       parseSecondSuccess.rest.toIterator `should` have `size` 0
 
-      val parsedWs        = (integer <* ws *> integer).run(TextInput("2    5"))
+      val parsedWs        = (int <* ws *> int).run(TextInput("2    5"))
       val parsedWsSuccess = parsedWs.toOption.get
       parsedWsSuccess.result `shouldBe` ()
       parsedWsSuccess.rest.toIterator `should` have `size` 0
     }
 
     "parse integers delimited by a space" in {
-      val parsed       = pipe3(integer, ws, integer).run(TextInput("2    5"))
+      val parsed       = pipe3(int, ws, int).run(TextInput("2    5"))
       val parseSuccess = parsed.toOption.get
       parseSuccess.result `shouldBe` (2, (), 5)
       parseSuccess.rest.toIterator `should` have `size` 0
@@ -112,7 +112,7 @@ class ParkourSpec extends AnyWordSpec with Matchers:
     }
 
     "parse an optionally negative integer" in {
-      val parser = pipe2(opt(satisfy(_ == '-')), integer)
+      val parser = pipe2(opt(satisfy(_ == '-')), int)
         .map {
           case (Some(_), i) => -1 * i
           case (None, i)    => i
@@ -136,7 +136,7 @@ class ParkourSpec extends AnyWordSpec with Matchers:
 
     "parse comma separated integers" in {
       val parsed =
-        sepBy(integer, satisfy(_ == ',')).run(TextInput("1,1,1,122abc"))
+        sepBy(int, satisfy(_ == ',')).run(TextInput("1,1,1,122abc"))
       val parseSuccess = parsed.toOption.get
       parseSuccess.result `shouldBe` List(1, 1, 1, 122)
       parseSuccess.rest.toIterator `should` have `size` 3

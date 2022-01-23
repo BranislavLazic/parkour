@@ -40,7 +40,7 @@ object JsonParser:
 
   val jsBoolean: Parser[JsValue] =
     (string("true") <|> string("false")).map(bool => JsBoolean(bool.toBoolean))
-  val jsInt: Parser[JsValue]  = integer.map(i => JsInt(i))
+  val jsInt: Parser[JsValue]  = int.map(i => JsInt(i))
   val jsNull: Parser[JsValue] = string("null").map(_ => JsNull)
   val jsString: Parser[JsValue] = betweenChars(
     '"',

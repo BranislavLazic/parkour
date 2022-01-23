@@ -37,8 +37,7 @@ final case class ParseSuccess[T](result: T, rest: ParserInput):
   override def toString(): String = s"""ParseSuccess($result, "$rest")"""
 
 object Parser:
-  def pure[T](t: T): Parser[T] =
-    Parser[T](input => Right(ParseSuccess(t, input)))
+  def pure[T](t: T): Parser[T] = Parser[T](input => Right(ParseSuccess(t, input)))
 
 final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSuccess[T]]):
 
