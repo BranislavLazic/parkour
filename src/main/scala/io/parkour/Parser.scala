@@ -73,6 +73,9 @@ final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSucce
       case r @ Right(_) => r
   }
 
+  /**
+    * Map parsers success value
+    */
   def map[R](f: T => R): Parser[R] = Parser[R] { input =>
     run(input).map { case ParseSuccess(value, rest) => ParseSuccess(f(value), rest) }
   }

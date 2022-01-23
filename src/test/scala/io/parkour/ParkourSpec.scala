@@ -51,10 +51,10 @@ class ParkourSpec extends AnyWordSpec with Matchers:
       parseSuccess.rest.toIterator `should` have `size` 0
     }
 
-    // "not parse an integer" in {
-    //   val parsed = integer.run(TextInput("a25"))
-    //   parsed `shouldBe` Left(ParseError("Not an integer 'a25'"))
-    // }
+    "not parse an integer" in {
+      val parsed = integer.run(TextInput("a25"))
+      parsed `shouldBe` Left(ParseError("Not an integer 'a25'"))
+    }
 
     "parse combined integers delimited by a space" in {
       val parsedFirst       = (integer <* ws <* integer).run(TextInput("2    5"))

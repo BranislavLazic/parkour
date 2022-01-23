@@ -40,8 +40,8 @@ object JsonParser:
 
   val jsBoolean: Parser[JsValue] =
     (string("true") <|> string("false")).map(bool => JsBoolean(bool.toBoolean))
-  val jsInt: Parser[JsValue] = integer.map(i => JsInt(i))
-  val jsNull                 = string("null").map(_ => JsNull)
+  val jsInt: Parser[JsValue]  = integer.map(i => JsInt(i))
+  val jsNull: Parser[JsValue] = string("null").map(_ => JsNull)
   val jsString: Parser[JsValue] = betweenChars(
     '"',
     '"',
@@ -54,7 +54,7 @@ object JsonParser:
   val jsArray: Parser[JsValue] =
     betweenChars('[', ']', sepBy(jsValueWs, satisfy(_ == ','))).map(list => JsArray(list))
 
-  def jsValueWs = ws <* (jsInt <|> jsString <|> jsBoolean <|> jsArray) *> ws
+  def jsValueWs = ws <* (jsInt <|> jsString <|> jsBoolean <|> jsNull <|> jsArray) *> ws
   def jsField   = pipe2(jsKeyWs *> satisfy(_ == ':'), jsValueWs)
   def jsObject  = ws <* betweenChars('{', '}', sepBy(jsField, satisfy(_ == ','))) *> ws
 
@@ -64,7 +64,7 @@ def main(args: Array[String]) =
     jsObject.run(
       TextInput(
         """
-        { "name": "John Doe", "drivingLicense": true, "age": 18, "tags": [1, true, 3] }
+        { "name": "John Doe", "drivingLicense": true, "age": 18, "tags": [1, true, "test", null] }
         """
       )
     )
