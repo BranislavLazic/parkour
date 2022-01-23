@@ -51,7 +51,7 @@ object Parkour:
   /**
     * Parses a single character that satisfies the given condition.
     */
-  def satisfy(cond: Char => Boolean) = Parser[Char] { input =>
+  def satisfy(cond: Char => Boolean): Parser[Char] = Parser[Char] { input =>
     val it = input.toIterator
     if (it.hasNext)
       val ch = it.next()
@@ -65,7 +65,7 @@ object Parkour:
   /**
     * Parses a sequence of characters that satisfy the given condition.
     */
-  def manySatisfy(cond: Char => Boolean) = Parser[List[Char]] { input =>
+  def manySatisfy(cond: Char => Boolean): Parser[List[Char]] = Parser[List[Char]] { input =>
     val (str, rest) = input.toIterator.span(cond)
     if (str.isEmpty)
       Left(ParseError(s"Unexpected character at the beginning of '$input'."))
@@ -76,31 +76,19 @@ object Parkour:
   /**
     * Skips a sequence of characters that satisfy the given condition.
     */
-  def skipManySatisfy(cond: Char => Boolean) = Parser[Unit] { input =>
-    val rest = input.toIterator.span(cond)._2
-    Right(ParseSuccess((), StreamInput(rest)))
-  }
+  def skipManySatisfy(cond: Char => Boolean): Parser[Unit] =
+    manySatisfy(cond).map(_ => ()) <|> Parser.pure(())
 
   /**
     * Parses a sequence of characters with the parser "p".
     */
   def many[T](p: Parser[T]): Parser[List[T]] =
-    Parser[List[T]] { input =>
-      val (original, duplicate) = input.toIterator.duplicate
-      p.run(StreamInput(original)) match
-        case Left(ParseError(message))        => Right(ParseSuccess(Nil, StreamInput(duplicate)))
-        case Right(ParseSuccess(value, rest)) => many(p).map(list => value :: list).run(rest)
-    }
+    p.flatMap(v => many(p).map(list => v :: list)) <|> Parser.pure(Nil)
 
   /**
     * Parses an optional occurrence of the given parser.
     */
-  def opt[T](p: Parser[T]): Parser[Option[T]] = Parser[Option[T]] { input =>
-    val (original, duplicate) = input.toIterator.duplicate
-    p.run(StreamInput(original)) match
-      case Left(ParseError(message))         => Right(ParseSuccess(None, StreamInput(duplicate)))
-      case Right(ParseSuccess(result, rest)) => Right(ParseSuccess(Some(result), rest))
-  }
+  def opt[T](p: Parser[T]): Parser[Option[T]] = p.map(v => Some(v)) <|> Parser.pure(None)
 
   /**
     * Parses multiple occurrences of parser "p" separated by "sep" parser.

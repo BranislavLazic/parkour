@@ -83,3 +83,8 @@ final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSucce
   def flatMap[R](f: T => Parser[R]): Parser[R] = Parser[R] { input =>
     run(input).flatMap { case ParseSuccess(value, rest) => f(value).run(rest) }
   }
+
+  def debug(): Parser[T] = map { t =>
+    println(t)
+    t
+  }
