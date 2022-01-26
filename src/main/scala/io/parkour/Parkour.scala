@@ -26,13 +26,13 @@ object Parkour:
     * Parses a single character that satisfies the given condition.
     */
   def satisfy(cond: Char => Boolean): Parser[Char] = Parser[Char] { input =>
-    val it = input.toIterator
+    val it = input.chars
     if (it.hasNext)
       val ch = it.next()
       if (cond(ch))
-        Right(ParseSuccess(ch, StreamInput(it)))
+        Right(ParseSuccess(ch, CharSeq(it)))
       else
-        Left(ParseError(s"Unexpected character at the beginning of '$input'."))
+        Left(ParseError(s"Unexpected character at the beginning of '${input}'."))
     else Left(ParseError(s"No characters to parse."))
   }
 
@@ -40,11 +40,11 @@ object Parkour:
     * Parses a sequence of characters that satisfy the given condition.
     */
   def manySatisfy(cond: Char => Boolean): Parser[List[Char]] = Parser[List[Char]] { input =>
-    val (str, rest) = input.toIterator.span(cond)
-    if (str.isEmpty)
-      Left(ParseError(s"Unexpected character at the beginning of '$input'."))
+    val res = input.takeWhile(cond)
+    if (res.isMaterializedEmpty)
+      Left(ParseError(s"Unexpected character at position ${res.pos}: '$res'."))
     else
-      Right(ParseSuccess(str.toList, StreamInput(rest)))
+      Right(ParseSuccess(res.materialized.toList, CharSeq(res.chars)))
   }
 
   /**
@@ -87,14 +87,14 @@ object Parkour:
     */
   def string(str: String): Parser[String] = Parser[String] { input =>
     val strIt = str.iterator
-    val (strResult, rest) =
-      input.toIterator.span { ch =>
+    val res =
+      input.takeWhile { ch =>
         if (strIt.hasNext) ch == strIt.next else false
       }
-    if (strResult.isEmpty)
-      Left(ParseError(s"Not a string at '$input'"))
+    if (res.isMaterializedEmpty)
+      Left(ParseError(s"Not a string character at position ${res.pos}: '$res'"))
     else
-      Right(ParseSuccess(strResult.mkString, StreamInput(rest)))
+      Right(ParseSuccess(res.materialized.mkString, CharSeq(res.chars)))
   }
 
   /**

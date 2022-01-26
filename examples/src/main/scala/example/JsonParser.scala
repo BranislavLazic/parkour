@@ -22,8 +22,8 @@
 package example
 
 import io.parkour.Parkour.*
-import io.parkour.TextInput
 import io.parkour.Parser
+import io.parkour.CharSeq
 
 sealed trait JsValue
 case object JsNull                                extends JsValue
@@ -62,7 +62,7 @@ def main(args: Array[String]) =
   import JsonParser.*
   println(
     jsObject.run(
-      TextInput(
+      CharSeq(
         """
         { "name": "John Doe", "drivingLicense": true, "age": 18, "tags": [1, true, "test", null] }
         """

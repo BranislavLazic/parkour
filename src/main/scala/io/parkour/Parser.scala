@@ -21,25 +21,14 @@
 
 package io.parkour
 
-sealed trait ParserInput:
-  def toIterator: Iterator[Char]
-
-final case class TextInput(text: String) extends ParserInput:
-  override def toIterator: Iterator[Char] = text.iterator
-  override def toString(): String         = text
-
-final case class StreamInput(stream: Iterator[Char]) extends ParserInput:
-  override def toIterator: Iterator[Char] = stream
-  override def toString(): String         = stream.mkString
-
 final case class ParseError(message: String)
-final case class ParseSuccess[T](result: T, rest: ParserInput):
+final case class ParseSuccess[T](result: T, rest: CharSeq):
   override def toString(): String = s"""ParseSuccess($result, "$rest")"""
 
 object Parser:
   def pure[T](t: T): Parser[T] = Parser[T](input => Right(ParseSuccess(t, input)))
 
-final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSuccess[T]]):
+final case class Parser[T](val run: CharSeq => Either[ParseError, ParseSuccess[T]]):
 
   /**
     * Combines two parsers where a succeeding value is the one from the left-hand-side parser.
@@ -65,10 +54,10 @@ final case class Parser[T](val run: ParserInput => Either[ParseError, ParseSucce
     * Combines two parsers where a succeeding value is one from any parser that succeeded.
     */
   def <|>(rhs: Parser[T]): Parser[T] = Parser[T] { input =>
-    val (original, copy) = input.toIterator.duplicate
-    run(StreamInput(original)) match
+    val (original, copy) = input.duplicate
+    run(original) match
       case Left(_) =>
-        rhs.run(StreamInput(copy))
+        rhs.run(copy)
       case r @ Right(_) => r
   }
 
