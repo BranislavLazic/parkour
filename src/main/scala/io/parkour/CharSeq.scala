@@ -26,7 +26,7 @@ final case class CharSeqSlice(
     materialized: Seq[Char] = Seq.empty[Char],
     pos: Int = 0
 ):
-  def isMaterializedEmpty = materialized.isEmpty
+  def isMaterializedEmpty: Boolean = materialized.isEmpty
 
   override def toString: String = chars.mkString
 
@@ -37,7 +37,7 @@ object CharSeq:
 
 class CharSeq(private val seqSlice: CharSeqSlice):
 
-  def chars = seqSlice.chars
+  def chars: Iterator[Char] = seqSlice.chars
 
   def takeWhile(cond: Char => Boolean): CharSeqSlice =
     val (materialized, rest) = seqSlice.chars.span(cond)
@@ -48,6 +48,6 @@ class CharSeq(private val seqSlice: CharSeqSlice):
     val (orig, copy) = seqSlice.chars.duplicate
     (CharSeq(orig), CharSeq(copy))
 
-  def size = seqSlice.chars.size
+  def size: Int = seqSlice.chars.size
 
   override def toString: String = seqSlice.chars.mkString

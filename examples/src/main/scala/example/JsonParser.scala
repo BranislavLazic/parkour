@@ -34,9 +34,10 @@ case class JsArray(values: List[JsValue])         extends JsValue
 case class JsObject(values: Map[String, JsValue]) extends JsValue
 
 object JsonParser:
-  def ws = skipManySatisfy(Character.isWhitespace)
   def betweenChars[T](open: Char, close: Char, p: Parser[T]): Parser[T] =
     satisfy(_ == open) <* p *> satisfy(_ == close)
+
+  val ws: Parser[Unit] = skipManySatisfy(Character.isWhitespace)
 
   val jsBoolean: Parser[JsValue] =
     (string("true") <|> string("false")).map(bool => JsBoolean(bool.toBoolean))
@@ -48,23 +49,35 @@ object JsonParser:
     manySatisfy(ch => Character.isLetterOrDigit(ch) || Character.isWhitespace(ch))
   ).map(s => JsString(s.mkString))
 
-  val jsKey   = betweenChars('"', '"', manySatisfy(Character.isLetterOrDigit)).map(_.mkString)
-  val jsKeyWs = ws <* jsKey *> ws
+  val jsKey: Parser[String] =
+    betweenChars('"', '"', manySatisfy(Character.isLetterOrDigit)).map(_.mkString)
+  val jsKeyWs: Parser[String] = ws <* jsKey *> ws
 
   val jsArray: Parser[JsValue] =
     betweenChars('[', ']', sepBy(jsValueWs, satisfy(_ == ','))).map(list => JsArray(list))
 
-  def jsValueWs = ws <* (jsInt <|> jsString <|> jsBoolean <|> jsNull <|> jsArray) *> ws
-  def jsField   = pipe2(jsKeyWs *> satisfy(_ == ':'), jsValueWs)
-  def jsObject  = ws <* betweenChars('{', '}', sepBy(jsField, satisfy(_ == ','))) *> ws
+  def jsValueWs: Parser[JsValue] =
+    ws <* (jsInt <|> jsString <|> jsBoolean <|> jsNull <|> jsArray) *> ws
 
-def main(args: Array[String]) =
+  val jsField: Parser[(String, JsValue)] = pipe2(jsKeyWs *> satisfy(_ == ':'), jsValueWs)
+
+  val jsObject: Parser[JsValue] =
+    (ws <* betweenChars('{', '}', sepBy(jsField, satisfy(_ == ','))) *> ws).map(pairs =>
+      JsObject(pairs.toMap)
+    )
+
+def main(args: Array[String]): Unit =
   import JsonParser.*
   println(
     jsObject.run(
       CharSeq(
         """
-        { "name": "John Doe", "drivingLicense": true, "age": 18, "tags": [1, true, "test", null] }
+        {
+          "name": "John Doe",
+          "drivingLicense": true,
+          "age": 18,
+          "tags": [1, true, "test", null]
+        }
         """
       )
     )
